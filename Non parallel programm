@@ -1,0 +1,98 @@
+#include<iostream>
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
+using namespace std;
+
+double* solveSystem(double** matrix, double* vector, int N) {
+	/*Прямой ход */
+	double forward;  
+	for (int i = 0; i < N; i++) {
+		forward = matrix[i][i];   //Ведущий элемент строки
+		for (int j = i; j < N; j++) {
+			matrix[i][j] /= forward;  //Каждый элемент в строке делится на ведущий..
+		}
+		vector[i] /= forward; //..и правый столбец тоже
+		for (int j = i + 1; j < N; j++) {
+			forward = matrix[j][i];   //выбираем новый ведущий элемент
+			for (int k = i; k < N; k++)
+				matrix[j][k] -= forward * matrix[i][k]; //"исключаем" старый ведущий элемент из системы
+			vector[j] -= forward * vector[i];
+		} //На выходе получаем верхнетреугольную матрицу
+	}
+	/*Обратный ход*/
+	double* answer = new double[N];
+	answer[N - 1] = vector[N - 1];  
+	for (int i = N - 2; i >= 0; i--) { 
+		answer[i] = vector[i];	//Крайний элемент ведущий		
+		for (int j = i + 1; j < N; j++) {
+			answer[i] -= matrix[i][j] * answer[j]; //Исключаем крайний элемент из всех строк, выше текущей
+		}
+	} //На выходе имеем матрицу E, у к-ой в правой части искомые x
+	return answer;
+}
+int main()
+{
+	int N = 2400;
+	double** matr = new double *[N];
+	for (int i = 0; i < N; i++)
+		matr[i] = new double[N];
+		
+	double* v = new double[N]; //xx[N+1], tmp;
+	int i, j, k;
+
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+		{
+			if (i==j)
+			{
+				matr[i][j] = 2;
+			}
+			else
+				matr[i][j] = 1;
+		}
+	}
+	for (int i = 0; i < N; i++)
+	{
+		v[i] = -(double)(i + 1) / 2;
+	}
+
+	/*cout << "SLAU:" << endl;
+	for (int i = 0; i < N; i++)
+	{
+		for (int j = 0; j < N; j++)
+			printf("%+3.0f*x%d", matr[i][j], i + 1);
+		printf("=%3.0f\n", v[i]);
+	}*/
+
+
+	clock_t start = clock();
+	double* ans = new double[N];
+	ans = solveSystem(matr, v, N);
+	
+	clock_t end = clock();
+	double seconds = (double)(end - start) / CLOCKS_PER_SEC;
+	printf("The time: %f seconds\n", seconds);
+	/*вывод решения*/
+	/*printf("\nMetod Gaussa:\n");
+	for (i = 0; i < N; i++)
+		printf("x%d=%3.3f\n", i + 1, ans[i]);*/
+
+	return 0;
+}
+
+
+
+
+
+//// 160 640 1600 2400
+//
+//						 |			 | Parall |              |
+//			| Non parall | 2 threads | 4 threads | 8 threads |
+//-----------------------------------------------------------------------------------		
+//		160 | 0.008223 s | 0.001204 s| 0.003873	s| 0.003136 s|
+//	    640	| 0.416630 s | 0.338770 s| 0.255397 s| 0.144902 s|
+//		1600| 6.269390 s | 4.954079 s| 2.815972 s| 2.088334 s|
+//		2400| 23.614288 s| 17.723499s| 9.943506 s| 7.756652 s|
